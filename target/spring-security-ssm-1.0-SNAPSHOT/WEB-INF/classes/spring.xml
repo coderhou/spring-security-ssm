@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+    	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
+    <!--jdbc属性文件 spring版本太低，不支持<context:property-placeholder/>-->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:jdbc.properties"/>
+    </bean>
+
+    <!--连接池-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="maxActive" value="30"/><!--最大激活数-->
+        <property name="maxWait" value="5000"/><!--最大等待时长-->
+        <property name="minIdle" value="5"/><!--最小空闲-->
+    </bean>
+    <!--导入spring security配置-->
+    <import resource="spring-security.xml"/>
+    <!--mybatis整合spring-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/><!--数据源-->
+        <!--把mybatis配置扫描进来 不用这种方式-->
+        <!--<property name="configLocation" value="classpath:mybatis.xml"/>-->
+
+        <property name="typeAliasesPackage" value="com.houjun.domain"/><!--在mybatisxml文件中能使用别名-->
+        <!--添加分页插件-->
+        <property name="plugins">
+            <array>
+                <bean  class="com.github.pagehelper.PageInterceptor">
+                    <property name="properties">
+                        <value>
+                            reasonable=true
+
+                        </value>
+                    </property>
+                </bean>
+            </array>
+        </property>
+
+
+    </bean>
+    <!--mybatis扫描器-->
+    <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.houjun.mapper,com.houjun.dao"/><!--扫描映射器,把接口扫描进mybatis，进而到spring-->
+    </bean>
+    <!--事务相关-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <tx:annotation-driven/>
+    <!--扫描注解-->
+    <context:component-scan base-package="com.houjun.service"/>
+
+    <bean id="myUserDetailService" class="com.houjun.security.MyUserDetailService"/><!--这个bean负责根据username去库里查询user信息-->
+    <bean id="myPasswordEncoder" class="com.houjun.encoder.MyPasswordEncoder"/><!--这个一个自定义的密码加密器-->
+    <bean id="myAuthenticationSuccessHandler" class="com.houjun.handler.MyAuthenticationSuccessHandler"/><!--当登录成功时执行-->
+    <bean id="myAuthenticationFailureHandler" class="com.houjun.handler.MyAuthenticationFailureHandler"/><!--当登录失败时执行-->
+    <bean id="gson" class="com.google.gson.Gson"/><!---->
+    <bean id="bCryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/><!--hash算法加密器-->
+    <bean id="imageCodeFilter" class="com.houjun.security.ImageCodeFilter"/><!--验证码校验过滤器-->
+    <!--记住我功能，PersistentTokenRepository接口实现类-->
+    <bean id="jdbcTokenRepository"
+          class="org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl">
+        <property name="dataSource" ref="dataSource"/>
+<!--        <property name="createTableOnStartup" value="true"/>-->
+    </bean>
+
+
+</beans>

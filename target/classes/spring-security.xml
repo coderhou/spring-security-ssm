@@ -1,0 +1,47 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+          http://www.springframework.org/schema/security
+          http://www.springframework.org/schema/security/spring-security-5.3.xsd">
+    <!--拦截器链   一个http元素就是一个过滤器-->
+    <security:http pattern="/emp**" security="none" />
+    <security:http pattern="/fail.html" security="none"/>
+    <security:http pattern="/login.jsp" security="none"/>
+    <security:http pattern="/index.jsp" security="none"/>
+    <security:http pattern="/js/**" security="none"/><!--放行资源文件-->
+<!--    <security:custom-filter ref=""/>-->
+    <security:http use-expressions="true" >
+        <security:custom-filter ref="imageCodeFilter"   before="FORM_LOGIN_FILTER"/><!--自定义过滤器，位置在FORM_LOGIN_FILTER之前-->
+        <security:intercept-url pattern="/user/del" access="hasAuthority('ROLE_DELETE_PRODUCT')"/>
+        <security:intercept-url pattern="/user/insert" access="hasAuthority('ROLE_ADD_PRODUCT')"/>
+        <security:intercept-url pattern="/user/look" access="hasAuthority('ROLE_LIST_PRODUCT')"/>
+        <security:intercept-url pattern="/user/update" access="hasAuthority('ROLE_UPDATE_PRODUCT')"/>
+        <security:intercept-url pattern="/**" access="fullyAuthenticated"/>
+        <security:access-denied-handler error-page="/fail.html"/>
+        <security:form-login login-page="/login.jsp" login-processing-url="/login"
+                             authentication-success-handler-ref="myAuthenticationSuccessHandler"
+                             authentication-failure-handler-ref="myAuthenticationFailureHandler"/>
+        <security:csrf disabled="true"/>
+        <security:logout logout-url="/logout"/>
+        <!--这个自动登录的逻辑是如果访问的cookie中有权限的url放行，没有的转向登录页
+            AbstractRememberMeServices.autoLogin()方法来拿到cookie进行判断
+            PersistentTokenRepository接口的子类JdbcTokenRepositoryImpl 与数据库交互-->
+        <security:remember-me user-service-ref="myUserDetailService"  token-repository-ref="jdbcTokenRepository" token-validity-seconds="3600" />
+    </security:http>
+
+    <!--认证授权-->
+    <security:authentication-manager>
+        <security:authentication-provider>
+            <security:password-encoder ref="myPasswordEncoder"/><!--指定这个provider的密码验证器-->
+            <security:user-service>
+                <security:user name="zhangsan" password="123" authorities="ROLE_ADMIN"/>
+            </security:user-service>
+        </security:authentication-provider>
+        <security:authentication-provider user-service-ref="myUserDetailService"><!--指定这个我们自定义的provider-->
+<!--            <security:password-encoder ref="bCryptPasswordEncoder"/>&lt;!&ndash;指定provider的密码验证器&ndash;&gt;-->
+            <security:password-encoder hash="bcrypt" /><!--指定provider的密码验证器-->
+        </security:authentication-provider>
+    </security:authentication-manager>
+</beans>

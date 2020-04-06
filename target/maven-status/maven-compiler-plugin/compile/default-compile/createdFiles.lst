@@ -1,0 +1,7 @@
+com\houjun\domain\Role.class
+com\houjun\domain\User.class
+com\houjun\controller\UserController.class
+com\houjun\mapper\UserMapper.class
+com\houjun\domain\Permission.class
+com\houjun\security\MyUserDetailService.class
+com\houjun\encoder\MyPasswordEncoder.class
